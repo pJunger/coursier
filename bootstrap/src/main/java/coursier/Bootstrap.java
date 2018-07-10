@@ -160,6 +160,19 @@ public class Bootstrap {
      * @throws MalformedURLException
      */
     static List<URL> getLocalURLs(List<URL> urls, final File cacheDir, String bootstrapProtocol) throws MalformedURLException {
+        return getLocalURLs(urls, cacheDir, bootstrapProtocol, Proxy.NO_PROXY);
+    }
+    
+    /**
+     *
+     * @param urls
+     * @param cacheDir
+     * @param bootstrapProtocol
+     * @param proxy
+     * @return
+     * @throws MalformedURLException
+     */
+    static List<URL> getLocalURLs(List<URL> urls, final File cacheDir, String bootstrapProtocol, Proxy proxy) throws MalformedURLException {
 
         ThreadFactory threadFactory = new ThreadFactory() {
             // from scalaz Strategy.DefaultDaemonThreadFactory
@@ -230,7 +243,7 @@ public class Bootstrap {
                                     throw new RuntimeException("Ongoing concurrent download for " + url);
                                 else
                                     try {
-                                        URLConnection conn = url.openConnection();
+                                        URLConnection conn = url.openConnection(proxy);
                                         long lastModified = conn.getLastModified();
                                         InputStream s = conn.getInputStream();
                                         byte[] b = readFullySync(s);
@@ -347,6 +360,11 @@ public class Bootstrap {
         return urls;
     }
 
+    // see below
+    static void registerBootstrapUnder(final String bootstrapProtocol, final ClassLoader loader) {
+        registerBootstrapUnder(bootstrapProtocol, loader, Proxy.NO_PROXY);
+    }
+    
     // JARs from JARs can't be used directly, see:
     // http://stackoverflow.com/questions/183292/classpath-including-jar-within-a-jar/2326775#2326775
     // Loading them via a custom protocol, inspired by:
@@ -360,7 +378,7 @@ public class Bootstrap {
                         URL resURL = loader.getResource(path);
                         if (resURL == null)
                             throw new FileNotFoundException("Resource " + path);
-                        return resURL.openConnection();
+                        return resURL.openConnection(proxy);
                     }
                 } : null;
             }
